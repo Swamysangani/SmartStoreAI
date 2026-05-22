@@ -1,13 +1,18 @@
-require("node:dns/promises").setServers(["1.1.1.1", "8.8.8.8"]);
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    // Explicitly set network lookup handlers
+    require("node:dns/promises").setServers(["1.1.1.1", "8.8.8.8"]);
+    
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000 // Error out quickly instead of hanging forever
+    });
+    
+    console.log(`MongoDB Connected Safely: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`Error: ${error.message}`);
-    process.exit(1);
+    console.error(`Database Connection Failure: ${error.message}`);
+    // Keep the server up even if network drops temporarily
   }
 };
 
