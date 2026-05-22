@@ -25,7 +25,7 @@ const Inventory = () => {
 
     setIsGenerating(true);
     try {
-      const res = await fetch('http://localhost:5000/api/ai/generate', {
+      const res = await fetch('https://smartstoreai.onrender.com/api/ai/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
