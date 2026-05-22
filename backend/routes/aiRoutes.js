@@ -50,4 +50,42 @@ Features: ${features || 'None provided'}`;
   }
 });
 
+// @route   POST /api/ai/insights
+// @desc    Generate sales insights and pricing recommendations
+router.post('/insights', async (req, res) => {
+  const { stock, price, monthlyRevenue } = req.body;
+
+  if (stock === undefined || price === undefined || !monthlyRevenue) {
+    return res.status(400).json({ message: 'Stock, price, and monthlyRevenue are required' });
+  }
+
+  const prompt = `Analyze the following product data:
+Current Stock: ${stock}
+Current Price: $${price}
+Historical Monthly Revenue: ${JSON.stringify(monthlyRevenue)}`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        systemInstruction: `You are a professional e-commerce data consultant. Analyze the numerical stock and historical sales trends provided. Return ONLY a valid, raw JSON object without any markdown formatting wrappers (no \`\`\`json). The JSON must have exactly this structure:
+{
+  "pricingRecommendation": "A detailed strategy on whether the store owner should raise, lower, or maintain the item price based on sales volume.",
+  "trendingInsights": "A critical summary outlining seasonal sales patterns, demand drops, or stock clearance advice based on the metrics."
+}`,
+        responseMimeType: "application/json",
+      }
+    });
+
+    const resultText = response.text;
+    const resultJson = JSON.parse(resultText);
+
+    res.json(resultJson);
+  } catch (error) {
+    console.error('Error generating AI insights:', error);
+    res.status(500).json({ message: 'Failed to generate insights' });
+  }
+});
+
 module.exports = router;
