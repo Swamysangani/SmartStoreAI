@@ -120,16 +120,16 @@ This section provides dedicated placeholders for project assignment submissions 
 1. Identity Gate & Authentication Firewall
 Provides security protection isolation across administrative routes using fully interactive forms tracking live error interception.
 
-![](./frontend/public/screenshots/s1.jpg)
+![](/frontend/public/screenshots/s1.jpg)
 Visual Reference: Render your pristine Tailwind UI authentication card indicating active state hooks.
 
 2. AI Metadata Inventory Workspace
 The algorithmic core of the suite. Enter basic information and fire the AI pipeline to observe synchronized UI field auto-population.
 
-![](./frontend/public/screenshots/s2.jpg)
+![](/frontend/public/screenshots/s2.jpg)
 Visual Reference: Highlight your dual-column workspace layout showing standard inputs on the left side and Gemini-generated marketing results on the right.
 
 3. Sales Intelligence Dashboard
 Renders complex numerical inventory histories matched against high-level business consultation strings.
 
-![](./frontend/public/screenshots/s3.jpg)
+![](/frontend/public/screenshots/s3.jpg)
