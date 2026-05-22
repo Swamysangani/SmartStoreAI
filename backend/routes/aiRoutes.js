@@ -7,12 +7,10 @@ const { protect } = require('../middleware/authMiddleware');
 router.use(protect);
 
 // Initialize Google Gen AI SDK
-// The key is automatically picked up from process.env.GEMINI_API_KEY
-// However, we explicitly pass it for clarity as per requirements.
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // @route   POST /api/ai/generate
-// @desc    Generate product description, tags, and caption using AI
+// @desc    Generate product data with Gemini, fallback automatically to Cohere if Gemini fails
 router.post('/generate', async (req, res) => {
   const { name, category, features } = req.body;
 
@@ -20,71 +18,70 @@ router.post('/generate', async (req, res) => {
     return res.status(400).json({ message: 'Name and category are required' });
   }
 
-  const prompt = `Generate a conversion-focused e-commerce product description, exactly five SEO keywords (tags), and a catchy social media marketing caption with hashtags for the following product:
+  const prompt = `You are an expert e-commerce copywriter. Generate a conversion-focused e-commerce product description, exactly five SEO keywords (tags), and a catchy social media marketing caption with hashtags for the following product:
 Name: ${name}
 Category: ${category}
-Features: ${features || 'None provided'}`;
+Features: ${features || 'None provided'}
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: `You are an expert e-commerce copywriter. Return ONLY a valid, raw JSON object without any markdown formatting wrappers (no \`\`\`json). The JSON must have exactly this structure:
+Return ONLY a valid, raw JSON object without any markdown formatting wrappers (no \`\`\`json). The JSON must have exactly this structure:
 {
   "description": "A conversion-focused e-commerce product description.",
   "tags": ["array", "of", "exactly", "five", "seo", "keywords"],
   "caption": "A catchy social media marketing caption with hashtags."
-}`,
-        responseMimeType: "application/json",
-      }
-    });
+}`;
 
-    const resultText = response.text;
-    const resultJson = JSON.parse(resultText);
-
-    res.json(resultJson);
-  } catch (error) {
-    console.error('Error generating AI content:', error);
-    res.status(500).json({ message: 'Failed to generate content' });
-  }
-});
-
-// @route   POST /api/ai/insights
-// @desc    Generate sales insights and pricing recommendations
-router.post('/insights', async (req, res) => {
-  const { stock, price, monthlyRevenue } = req.body;
-
-  if (stock === undefined || price === undefined || !monthlyRevenue) {
-    return res.status(400).json({ message: 'Stock, price, and monthlyRevenue are required' });
-  }
-
-  const prompt = `Analyze the following product data:
-Current Stock: ${stock}
-Current Price: $${price}
-Historical Monthly Revenue: ${JSON.stringify(monthlyRevenue)}`;
-
+  // --- TRY METHOD 1: GOOGLE GEMINI ---
   try {
+    console.log('🔄 Attempting content generation via Primary Engine (Gemini)...');
+    
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash', // Using highly stable 1.5-flash cluster
       contents: prompt,
       config: {
-        systemInstruction: `You are a professional e-commerce data consultant. Analyze the numerical stock and historical sales trends provided. Return ONLY a valid, raw JSON object without any markdown formatting wrappers (no \`\`\`json). The JSON must have exactly this structure:
-{
-  "pricingRecommendation": "A detailed strategy on whether the store owner should raise, lower, or maintain the item price based on sales volume.",
-  "trendingInsights": "A critical summary outlining seasonal sales patterns, demand drops, or stock clearance advice based on the metrics."
-}`,
+        systemInstruction: "Return ONLY a valid, raw JSON object matching the requested schema. No markdown formatting.",
         responseMimeType: "application/json",
       }
     });
 
-    const resultText = response.text;
-    const resultJson = JSON.parse(resultText);
+    const resultJson = JSON.parse(response.text);
+    console.log('✅ Success: Content generated using Gemini.');
+    return res.json(resultJson);
 
-    res.json(resultJson);
-  } catch (error) {
-    console.error('Error generating AI insights:', error);
-    res.status(500).json({ message: 'Failed to generate insights' });
+  } catch (geminiError) {
+    // Gemini failed (Traffic, quota, or network block) -> Triggering Fallback
+    console.warn('⚠️ Primary Engine (Gemini) Failed or Out of Quota. Error details:', geminiError.message);
+    console.log('🚀 Activating Secondary Fallback Engine (Cohere Command-R)...');
+
+    // --- TRY METHOD 2: COHERE FALLBACK ---
+    try {
+      const cohereResponse = await fetch('https://api.cohere.com/v1/chat', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.COHERE_API_KEY}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'command-r',
+          message: prompt
+        })
+      });
+
+      if (!cohereResponse.ok) {
+        throw new Error(`Cohere API returned status code: ${cohereResponse.status}`);
+      }
+
+      const cohereData = await cohereResponse.json();
+      const resultJson = JSON.parse(cohereData.text);
+      
+      console.log('✅ Success: Fallback content generated using Cohere.');
+      return res.json(resultJson);
+
+    } catch (cohereError) {
+      // Both engines failed
+      console.error('❌ Critical: Both Gemini and Cohere engines failed.', cohereError);
+      return res.status(500).json({ message: 'All upstream AI services are temporarily down.' });
+    }
   }
 });
 
