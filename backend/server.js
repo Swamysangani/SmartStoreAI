@@ -2,11 +2,14 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+
+// Load env vars FIRST so routes can access them during initialization
+dotenv.config();
+
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
-
-dotenv.config();
+const aiRoutes = require('./routes/aiRoutes');
 
 connectDB();
 
@@ -19,6 +22,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/ai', aiRoutes);
 
 
 // Basic Route
