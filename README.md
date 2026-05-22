@@ -126,10 +126,10 @@ Visual Reference: Render your pristine Tailwind UI authentication card indicatin
 2. AI Metadata Inventory Workspace
 The algorithmic core of the suite. Enter basic information and fire the AI pipeline to observe synchronized UI field auto-population.
 
-[INSERT YOUR INVENTORY MANAGEMENT SCREENSHOT HERE]
+![](./frontend/public/screenshots/s2.jpg)
 Visual Reference: Highlight your dual-column workspace layout showing standard inputs on the left side and Gemini-generated marketing results on the right.
 
 3. Sales Intelligence Dashboard
 Renders complex numerical inventory histories matched against high-level business consultation strings.
 
-[INSERT YOUR SALES DASHBOARD SCREENSHOT HERE]
+![](./frontend/public/screenshots/s3.jpg)
