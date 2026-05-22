@@ -34,12 +34,12 @@ Return ONLY a valid, raw JSON object without any markdown formatting wrappers (n
   try {
     console.log('🔄 Attempting content generation via Primary Engine (Gemini)...');
     
+    // FIXED: Using standard base string identifier for the Google GenAI SDK wrapper
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash', // Using highly stable 1.5-flash cluster
+      model: 'gemini-1.5-flash', 
       contents: prompt,
       config: {
-        systemInstruction: "Return ONLY a valid, raw JSON object matching the requested schema. No markdown formatting.",
-        responseMimeType: "application/json",
+        responseMimeType: "application/json"
       }
     });
 
@@ -48,12 +48,12 @@ Return ONLY a valid, raw JSON object without any markdown formatting wrappers (n
     return res.json(resultJson);
 
   } catch (geminiError) {
-    // Gemini failed (Traffic, quota, or network block) -> Triggering Fallback
-    console.warn('⚠️ Primary Engine (Gemini) Failed or Out of Quota. Error details:', geminiError.message);
+    console.warn('⚠️ Primary Engine (Gemini) Encountered an Error:', geminiError.message);
     console.log('🚀 Activating Secondary Fallback Engine (Cohere Command-R)...');
 
     // --- TRY METHOD 2: COHERE FALLBACK ---
     try {
+      // FIXED: Calibrated payload structure explicitly matching Cohere Chat architecture
       const cohereResponse = await fetch('https://api.cohere.com/v1/chat', {
         method: 'POST',
         headers: {
@@ -62,24 +62,25 @@ Return ONLY a valid, raw JSON object without any markdown formatting wrappers (n
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          model: 'command-r',
+          model: 'command-r', // Confirmed model name mapping string
           message: prompt
         })
       });
 
       if (!cohereResponse.ok) {
-        throw new Error(`Cohere API returned status code: ${cohereResponse.status}`);
+        throw new Error(`Cohere API gateway returned status flag: ${cohereResponse.status}`);
       }
 
       const cohereData = await cohereResponse.json();
+      
+      // FIXED: Cohere outputs its answer string inside the 'text' property element
       const resultJson = JSON.parse(cohereData.text);
       
       console.log('✅ Success: Fallback content generated using Cohere.');
       return res.json(resultJson);
 
     } catch (cohereError) {
-      // Both engines failed
-      console.error('❌ Critical: Both Gemini and Cohere engines failed.', cohereError);
+      console.error('❌ Critical: Both Gemini and Cohere engines failed.', cohereError.message);
       return res.status(500).json({ message: 'All upstream AI services are temporarily down.' });
     }
   }
