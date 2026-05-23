@@ -92,11 +92,12 @@ const SalesDashboard = () => {
   };
 
   const chartData = selectedProduct ? {
-    labels: selectedProduct.monthlyRevenue.map(m => m.month),
+    // ✅ Added fallback checks to protect the chart from empty data arrays
+    labels: (selectedProduct.monthlyRevenue || []).map(m => m.month || ''),
     datasets: [
       {
         label: 'Revenue ($)',
-        data: selectedProduct.monthlyRevenue.map(m => m.revenue),
+        data: (selectedProduct.monthlyRevenue || []).map(m => m.revenue || 0),
         backgroundColor: 'rgba(59, 130, 246, 0.7)',
         borderColor: 'rgba(59, 130, 246, 1)',
         borderWidth: 1,
@@ -162,8 +163,7 @@ const SalesDashboard = () => {
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 p-6 rounded-2xl border border-purple-100/60 shadow-sm">
                   <div className="text-sm text-purple-600 font-semibold mb-1 uppercase tracking-wider">6-Mo Revenue</div>
                   <div className="text-4xl font-black text-gray-900">
-                    ${selectedProduct.monthlyRevenue.reduce((acc, curr) => acc + curr.revenue, 0).toLocaleString()}
-                  </div>
+                      ${(selectedProduct.monthlyRevenue || []).reduce((acc, curr) => acc + (curr.revenue || 0), 0).toLocaleString()}                  </div>
                 </div>
               </div>
 
