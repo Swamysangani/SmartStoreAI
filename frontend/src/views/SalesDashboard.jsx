@@ -45,7 +45,7 @@ const SalesDashboard = () => {
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
-        setLoadingProducts(false);
+        loadingProducts(false);
       }
     };
     if (token) fetchProducts();
@@ -65,7 +65,8 @@ const SalesDashboard = () => {
     setInsights(null);
     
     try {
-      const res = await fetch('http://localhost:5000/api/ai/insights', {
+      // ✅ FIXED: Points to your production Render backend instead of localhost
+      const res = await fetch('https://smartstoreai.onrender.com/api/ai/insights', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -203,7 +204,6 @@ const SalesDashboard = () => {
           {/* Right Column: AI Consultant Panel */}
           <div className="xl:col-span-1">
             <div className="bg-gray-900 rounded-3xl shadow-2xl border border-gray-800 p-8 text-white h-full flex flex-col relative overflow-hidden">
-              {/* Subtle background glow effect */}
               <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-600 rounded-full mix-blend-screen filter blur-[80px] opacity-20 pointer-events-none"></div>
               
               <div className="relative z-10">
