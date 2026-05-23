@@ -45,7 +45,7 @@ const SalesDashboard = () => {
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
-        loadingProducts(false);
+        setLoadingProducts(false);
       }
     };
     if (token) fetchProducts();
@@ -58,6 +58,11 @@ const SalesDashboard = () => {
 
   const selectedProduct = products.find(p => p._id === selectedProductId);
 
+  // SAFE DATA PARSING: Fallback arrays to prevent "a is not a function" errors
+  const safeMonthlyRevenue = selectedProduct && Array.isArray(selectedProduct.monthlyRevenue) 
+    ? selectedProduct.monthlyRevenue 
+    : [];
+
   const handleFetchInsights = async () => {
     if (!selectedProduct) return;
     
@@ -65,7 +70,6 @@ const SalesDashboard = () => {
     setInsights(null);
     
     try {
-      // ✅ FIXED: Points to your production Render backend instead of localhost
       const res = await fetch('https://smartstoreai.onrender.com/api/ai/insights', {
         method: 'POST',
         headers: {
@@ -73,9 +77,9 @@ const SalesDashboard = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          stock: selectedProduct.stock,
-          price: selectedProduct.price,
-          monthlyRevenue: selectedProduct.monthlyRevenue
+          stock: selectedProduct.stock || 0,
+          price: selectedProduct.price || 0,
+          monthlyRevenue: safeMonthlyRevenue
         })
       });
 
@@ -92,12 +96,11 @@ const SalesDashboard = () => {
   };
 
   const chartData = selectedProduct ? {
-    // ✅ Added fallback checks to protect the chart from empty data arrays
-    labels: (selectedProduct.monthlyRevenue || []).map(m => m.month || ''),
+    labels: safeMonthlyRevenue.map(m => m.month || ''),
     datasets: [
       {
         label: 'Revenue ($)',
-        data: (selectedProduct.monthlyRevenue || []).map(m => m.revenue || 0),
+        data: safeMonthlyRevenue.map(m => m.revenue || 0),
         backgroundColor: 'rgba(59, 130, 246, 0.7)',
         borderColor: 'rgba(59, 130, 246, 1)',
         borderWidth: 1,
@@ -144,7 +147,6 @@ const SalesDashboard = () => {
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           
-          {/* Left Column: Analytics Chart & Metrics */}
           <div className="xl:col-span-2 space-y-6">
             <div className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
               <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -154,16 +156,17 @@ const SalesDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-6 rounded-2xl border border-blue-100/60 shadow-sm">
                   <div className="text-sm text-blue-600 font-semibold mb-1 uppercase tracking-wider">Current Price</div>
-                  <div className="text-4xl font-black text-gray-900">${selectedProduct.price.toFixed(2)}</div>
+                  <div className="text-4xl font-black text-gray-900">${(selectedProduct?.price || 0).toFixed(2)}</div>
                 </div>
                 <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-6 rounded-2xl border border-emerald-100/60 shadow-sm">
                   <div className="text-sm text-emerald-600 font-semibold mb-1 uppercase tracking-wider">Available Stock</div>
-                  <div className="text-4xl font-black text-gray-900">{selectedProduct.stock} <span className="text-xl text-emerald-700/60">units</span></div>
+                  <div className="text-4xl font-black text-gray-900">{selectedProduct?.stock || 0} <span className="text-xl text-emerald-700/60">units</span></div>
                 </div>
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 p-6 rounded-2xl border border-purple-100/60 shadow-sm">
                   <div className="text-sm text-purple-600 font-semibold mb-1 uppercase tracking-wider">6-Mo Revenue</div>
                   <div className="text-4xl font-black text-gray-900">
-                      ${(selectedProduct.monthlyRevenue || []).reduce((acc, curr) => acc + (curr.revenue || 0), 0).toLocaleString()}                  </div>
+                    ${safeMonthlyRevenue.reduce((acc, curr) => acc + (curr.revenue || 0), 0).toLocaleString()}
+                  </div>
                 </div>
               </div>
 
@@ -201,7 +204,6 @@ const SalesDashboard = () => {
             </div>
           </div>
 
-          {/* Right Column: AI Consultant Panel */}
           <div className="xl:col-span-1">
             <div className="bg-gray-900 rounded-3xl shadow-2xl border border-gray-800 p-8 text-white h-full flex flex-col relative overflow-hidden">
               <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-600 rounded-full mix-blend-screen filter blur-[80px] opacity-20 pointer-events-none"></div>
